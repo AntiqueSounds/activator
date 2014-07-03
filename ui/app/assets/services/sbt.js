@@ -38,6 +38,11 @@ define(['commons/streams', 'commons/events', 'commons/utils'], function(streams,
     });
   }
 
+  function requestRestart() {
+    return sbtRequest('restart', {
+    });
+  }
+
   var executionsById = {};
   var executions = ko.observableArray();
   var tasksById = {};
@@ -81,7 +86,7 @@ define(['commons/streams', 'commons/events', 'commons/utils'], function(streams,
               finished: ko.observable(false),
               succeeded: ko.observable(false)
           };
-          console.log("Starting task ", task);
+          debug && console.log("Starting task ", task);
           // we want to be in the by-id hash before we notify
           // on the tasks array
           tasksById[task.taskId] = task;
@@ -113,7 +118,7 @@ define(['commons/streams', 'commons/events', 'commons/utils'], function(streams,
             succeeded: ko.observable(false),
             tasks: ko.observableArray()
         };
-        console.log("Waiting execution ", execution);
+        debug && console.log("Waiting execution ", execution);
         // we want to be in the by-id hash before we notify
         // on the executions array
         executionsById[execution.executionId] = execution;
@@ -164,6 +169,7 @@ define(['commons/streams', 'commons/events', 'commons/utils'], function(streams,
     possibleAutocompletions: possibleAutocompletions,
     requestExecution: requestExecution,
     cancelExecution: cancelExecution,
+    requestRestart: requestRestart,
     legacySubscribeLog: legacySubscribeLog,
     executions: executions
   };

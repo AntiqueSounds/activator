@@ -1,51 +1,7 @@
 /*
  Copyright (C) 2013 Typesafe, Inc <http://typesafe.com>
  */
-define(['commons/utils'], function(utils) {
-
-
-  function browse(location) {
-    return $.ajax({
-      url: '/api/local/browse',
-      type: 'GET',
-      dataType: 'json',
-      data: {
-        location: location
-      }
-    });
-  }
-  // Fetch utility
-  function show(location){
-    return $.ajax({
-      url: '/api/local/show',
-      type: 'GET',
-      dataType: 'text',
-      data: { location: location }
-    });
-  }
-  function save(location, code) {
-    return $.ajax({
-      url: '/api/local/save',
-      type: 'PUT',
-      dataType: 'text',
-      data: {
-        location: location,
-        content: code
-      }
-    });
-  }
-
-  function rename(location, newName) {
-    return $.ajax({
-      url: '/api/local/rename',
-      type: 'PUT',
-      dataType: 'text',
-      data: {
-        location: location,
-        newName: newName
-      }
-    });
-  }
+define(['commons/utils', 'services/ajax'], function(utils, ajax) {
 
   // A model for files that works directly off a location, and
   // nothing else.
@@ -106,7 +62,7 @@ define(['commons/utils'], function(utils) {
     loadInfo: function() {
       // TODO - Rate limit this...
       var self = this;
-      browse(this.location).done(function(values) {
+      ajax.browse(this.location).done(function(values) {
         self.updateWith(values);
       }).error(function() {
         alert('Failed to load information about file: ' + self.location)
@@ -163,7 +119,7 @@ define(['commons/utils'], function(utils) {
     },
     loadContents: function() {
       var self = this;
-      show(self.location).done(function(contents) {
+      ajax.show(self.location).done(function(contents) {
         self.contents(contents);
         self.isContentsDirty(false);
       }).error(function() {
@@ -174,7 +130,7 @@ define(['commons/utils'], function(utils) {
     },
     saveContents: function(onDone, onCancel) {
       var self = this;
-      save(self.location, self.contents()).done(function(){
+      ajax.save(self.location, self.contents()).done(function(){
         self.isContentsDirty(false);
         if (typeof(onDone) === 'function')
           onDone();
@@ -229,7 +185,7 @@ define(['commons/utils'], function(utils) {
       if (!newValue) {
         var newName = this.editingText();
         if (newName.length > 0 && newName != this.name()) {
-          rename(this.location, newName).done(function() {
+          ajax.rename(this.location, newName).done(function() {
             debug && console.log("Rename success");
             self.reloadParent();
           }).fail(function(err) {

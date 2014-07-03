@@ -1,19 +1,8 @@
 /*
  Copyright (C) 2013 Typesafe, Inc <http://typesafe.com>
  */
-define(['text!./openInEclipse.html', 'text!./openInIdea.html', 'commons/utils', 'commons/widget', 'services/oldSbt', 'widgets/overlay/overlay', 'services/log', 'widgets/log/log'],
-function(eclipseTemplate, ideaTemplate, utils, Widget, sbt, Overlay, Log, LogView){
-
-  function browse(location) {
-    return $.ajax({
-      url: '/api/local/browse',
-      type: 'GET',
-      dataType: 'json',
-      data: {
-        location: location
-    }
-    });
-  }
+define(['text!./openInEclipse.html', 'text!./openInIdea.html', 'commons/utils', 'commons/widget', 'services/oldSbt', 'widgets/overlay/overlay', 'services/log', 'widgets/log/log', 'services/ajax', './eclipseGenerator'],
+function(eclipseTemplate, ideaTemplate, utils, Widget, sbt, Overlay, Log, LogView, ajax, eclipseGenerator){
 
   var OpenIn = utils.Class(Widget, {
     init: function(parameters) {
@@ -48,20 +37,13 @@ function(eclipseTemplate, ideaTemplate, utils, Widget, sbt, Overlay, Log, LogVie
     close: function() {
       this.overlay.close();
     },
-    _updateHaveProjectFiles: function() {
-      var self = this;
-      browse(serverAppModel.location + "/" + self.projectFilename).done(function(data) {
-        self.haveProjectFiles(true);
-      }).error(function() {
-        self.haveProjectFiles(false);
-      });
-    },
     // node may be null to hide all pages
     _switchTo: function(node) {
       var self = this;
       var nodes = [self.startNode, self.generateNode, self.instructionsNode];
       $.each(nodes, function(i, value) {
         if (value === node) {
+          console.log("VALUE, NODE: " + value + ", " + node);
           value.fadeIn();
         } else {
           value.hide();
@@ -69,11 +51,20 @@ function(eclipseTemplate, ideaTemplate, utils, Widget, sbt, Overlay, Log, LogVie
       });
     },
     start: function() {
-      this._updateHaveProjectFiles();
+      this._switchTo(this.startNode);
+      if (this.generator.hasProjectFile() === true) {
+        this.haveProjectFiles(true);
+      } else {
+        this.haveProjectFiles(false);
+      }
       this._switchTo(this.startNode);
     },
-    generate: function() {
-      var self = this;
+    generate: function(overrideExisting) {
+      this._switchTo(this.generateNode);
+      console.log("***** GENERATING with override: ", overrideExisting);
+      this.generator.generate(this.workingStatus, overrideExisting);
+
+      /*
       this._switchTo(this.generateNode);
       if (self.activeTask() == "") {
         self.workingStatus("Generating " + self.ideName + " project files...");
@@ -99,6 +90,7 @@ function(eclipseTemplate, ideaTemplate, utils, Widget, sbt, Overlay, Log, LogVie
         });
         self.activeTask(taskId);
       }
+      */
     },
     instructions: function() {
       this._switchTo(this.instructionsNode);
@@ -111,7 +103,8 @@ function(eclipseTemplate, ideaTemplate, utils, Widget, sbt, Overlay, Log, LogVie
     overlayClass: 'open-in-eclipse',
     projectFilename: '.project',
     taskName: 'eclipse',
-    ideName: 'Eclipse'
+    ideName: 'Eclipse',
+    generator: eclipseGenerator
   });
 
   var OpenInIdea = utils.Class(OpenIn, {

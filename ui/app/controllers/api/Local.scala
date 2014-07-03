@@ -193,16 +193,16 @@ object Local extends Controller {
     Ok(content)
   }
 
-  val createFileForm = Form(tuple("location" -> text, "isDirectory" -> boolean))
+  val createFileForm = Form(tuple("location" -> text, "isDirectory" -> boolean, "content" -> text))
   def createFile = Action { implicit request =>
-    val (location, isDirectory) = createFileForm.bindFromRequest.get
+    val (location, isDirectory, content) = createFileForm.bindFromRequest.get
     val loc = Platform.fromClientFriendlyFilename(location)
     try {
       import sbt.IO
       if (isDirectory)
         IO.createDirectory(loc)
       else
-        IO.write(loc, "")
+        IO.write(loc, content)
       Logger.debug(s"created $loc OK")
       Ok("")
     } catch {

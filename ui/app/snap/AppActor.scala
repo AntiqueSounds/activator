@@ -7,14 +7,12 @@ import com.typesafe.sbtrc._
 import akka.actor._
 import akka.pattern._
 import java.io.File
-import java.net.URLEncoder
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import scala.concurrent.duration._
 import console.ClientController.HandleRequest
 import JsonHelper._
 import play.api.libs.json._
 import play.api.libs.json.Json._
-import play.api.libs.functional.syntax._
 import sbt.client._
 import sbt.protocol._
 import scala.reflect.ClassTag
@@ -35,7 +33,8 @@ sealed trait ClientAppRequest extends AppRequest
 
 case class RequestExecution(command: String) extends ClientAppRequest
 case class CancelExecution(executionId: Long) extends ClientAppRequest
-case class PossibleAutocompletions(partialCommand: String, detailLevel: Option[Int] = None) extends ClientAppRequest
+case class PossibleAutoCompletions(partialCommand: String, detailLevel: Option[Int] = None) extends ClientAppRequest
+case object RequestSelfDestruct extends ClientAppRequest
 
 sealed trait AppReply
 
@@ -137,7 +136,9 @@ class AppActor(val config: AppConfig) extends Actor with ActorLogging {
         }
       case UpdateSourceFiles(files) =>
         projectWatcher ! SetSourceFilesRequest(files)
-      case ReloadSbtBuild => // TODO FIXME
+      case ReloadSbtBuild =>
+      // TODO : implement
+      //clientActor.foreach(_ ! RequestSelfDestruct)
       case OpenClient(client) =>
         log.debug(s"Old client actor was ${clientActor}")
         clientActor.foreach(_ ! PoisonPill) // shouldn't happen - paranoia
@@ -248,13 +249,15 @@ class AppActor(val config: AppConfig) extends Actor with ActorLogging {
         case test: TestEvent => forwardOverSocket(test)
       }
       case structure: MinimalBuildStructure => // TODO
+      // The RequestSelfDestruct must be before the ClientAppRequest check below or else it will slurp up the RSD as well (see hierarchy)
+      case RequestSelfDestruct => client.requestSelfDestruct()
       case req: ClientAppRequest => {
         req match {
           case RequestExecution(command) =>
             client.requestExecution(command, interaction = None)
           case CancelExecution(executionId) =>
             client.cancelExecution(executionId)
-          case PossibleAutocompletions(partialCommand, detailLevelOption) =>
+          case PossibleAutoCompletions(partialCommand, detailLevelOption) =>
             client.possibleAutocompletions(partialCommand, detailLevel = detailLevelOption.getOrElse(0))
         }
       } pipeTo sender
