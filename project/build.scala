@@ -242,6 +242,7 @@ object TheActivatorBuild extends Build {
         "com.novocode" % "junit-interface" % "0.10",
         "com.typesafe.slick" % "slick_2.11" % Dependencies.slickVersion,
         "junit" % "junit" % "4.11",
+        "junit" % "junit" % "3.8.1",
         "org.slf4j" % "slf4j-nop" % "1.6.4",
         "org.fusesource.jansi" % "jansi" % "1.11",
         "org.scalatest" % "scalatest_2.11" % "2.1.6",
@@ -279,7 +280,10 @@ object TheActivatorBuild extends Build {
         "org.webjars" % "squirejs" % "0.1.0",
 
         "com.typesafe.play.extras" % "play-geojson_2.11" % "1.1.0",
-        "com.typesafe.akka" % "akka-contrib_2.11" % Dependencies.akkaVersion
+        "com.typesafe.akka" % "akka-contrib_2.11" % Dependencies.akkaVersion,
+        "org.codehaus.plexus" % "plexus-interactivity-api" % "1.0-alpha-6",
+        "org.codehaus.plexus" % "plexus-component-api" % "1.0-alpha-16",
+        "org.jcraft" % "jsch" % "0.1.38"
         ),
       Keys.mappings in S3.upload <<= (Keys.packageBin in Universal, Packaging.minimalDist, Keys.version) map { (zip, minimalZip, v) =>
         Seq(minimalZip -> ("typesafe-activator/%s/typesafe-activator-%s-minimal.zip" format (v, v)),

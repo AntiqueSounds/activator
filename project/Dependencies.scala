@@ -7,13 +7,13 @@ object Dependencies {
   val sbtPluginScalaVersion = "2.11.1"
   val scalaVersion = "2.11.1"
   val luceneVersion = "4.2.1"
-  val templateCacheVersion = "1.0-49b8876fe876cfc6874a914722363e845217feff"
-  val sbtRcVersion = "1.0-46280b51037faa6d50698c46c8725d33b75cae1e"
+  val templateCacheVersion = "1.0-e9eaed4661e404bea0523f07a81ae5bff1485125"
+  val sbtRcVersion = "1.0-8756df5dedb13e490ab9ce8a11dbb5a0b5c02362"
 
-  val playVersion = "2.3.1"
+  val playVersion = "2.3.2"
   val akkaVersion = "2.3.3"
   val slickVersion = "2.1.0-M2"
-  val echoPluginVersion = "0.1.3"
+  val echoPluginVersion = "0.1.1.3"
   val activatorAnalyticsVersion = "0.1.5"
   val aspectJVersion = "1.7.3"
 
