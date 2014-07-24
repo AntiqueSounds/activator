@@ -26,6 +26,16 @@ define([
     // TODO return something better (with the return value already parsed)
     return sbtRequest('possibleAutocompletions', {
       partialCommand: partialCommand
+    }).pipe(function(completions) {
+      return $.map(completions.choices, function(completion){
+        return {
+          title: completion.display,
+          subtitle: "run sbt task " + completion.display,
+          type: "Sbt",
+          url: false,
+          execute: partialCommand + completion.append
+        }
+      });
     });
   }
 

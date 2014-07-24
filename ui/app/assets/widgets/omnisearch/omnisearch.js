@@ -13,28 +13,36 @@ define([
   var defaultSuggestions = [],
       searchString = ko.observable("").extend({ throttle: 200 }),
       searchStringLast = "",
-      busy = ko.observable(false),
+      pendingQueries = ko.observable(0),
       active = ko.observable(false),
-      options = ko.observable([]),
-      selected = ko.observable(0);
+      options = ko.observable([]).extend({ notify: 'always' }),
+      selected = ko.observable(0),
+      empty = ko.computed(function() {
+        return searchString().length >= 2 && options().length == 0;
+      });
+
+  options.subscribe(function() {
+    pendingQueries(pendingQueries()-1);
+  })
 
   searchString.subscribe(function(keywords) {
     // Don't search until at least two characters are entered and search string isn't the same as last
+    pendingQueries(pendingQueries()+1);
     if (keywords.length >= 2) {
-      busy(true);
-      search.search(keywords, options);
+      search.combinedSearch(keywords, options);
     } else {
       options([]);
-      busy(false);
-      active(false);
+      pendingQueries(0);
     }
   });
 
   var State = {
 
     options: options,
-    busy: busy,
+    pendingQueries: pendingQueries,
     selected: selected,
+    active: active,
+    empty: empty,
     searchString: searchString,
 
     keyDown: function(state,e) {
@@ -90,15 +98,15 @@ define([
       }
     },
 
-    focus: function() {},
+    focus: function() {
+      active(true);
+    },
 
     blur: function() {
       // Delay hiding of omnisearch list to catch mouse click on list before it disappears
       setTimeout(function(){
         active(false);
-        selected(0);
-        searchString("");
-      }, 3500);
+      }, 10);
     },
 
     scrollToSelected: function() {

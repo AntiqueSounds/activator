@@ -1,11 +1,11 @@
 <form id="omnisearch">
   <input type="text" name="keywords" placeholder="Type a command or keywords" autocomplete="off" data-bind="value: searchString, valueUpdate: 'afterkeydown', event: {'keyup': keyUp,'keydown': keyDown,'focus': focus,'blur': blur}">
-  <ul data-bind="css: {empty: !options().length}, foreach: options">
+  <ul data-bind="css: {active: active, empty: empty}, foreach: options">
     <li data-bind="click: function(){ exec($data); }, css: {selected: parseFloat($index()) == $parent.selected()}">
       <span class="title" data-bind="text: title"></span>
       <span class="subtitle" data-bind="text: subtitle"></span>
       <span class="type" data-bind="text: type"></span>
     </li>
   </ul>
-  <span class="spinner" data-bind="visible: busy"></span>
+  <span class="spinner" data-bind="visible: pendingQueries"></span>
 </form>

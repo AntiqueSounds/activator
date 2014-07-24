@@ -1,19 +1,25 @@
 /*
  Copyright (C) 2013 Typesafe, Inc <http://typesafe.com>
  */
-define(function() {
+define([
+  'services/sbt',
+  'services/fs'
+], function(
+  sbt,
+  fs
+) {
 
-  // Talk to backend, update omnisearchOptions with result
-  // TODO - Figure out a better way to get this URL!
-  var doSearch = function(keywords){
-    var url = '/app/' + window.serverAppModel.id + '/search/' + keywords;
-    return $.ajax({
-     url: url,
-     dataType: 'json'
+  // options is the observable where we put the results
+  var combinedSearch = function(keywords, options) {
+    debug && console.log("starting search on " + keywords);
+    return $.when(fs.search(keywords), sbt.tasks.possibleAutocompletions(keywords))
+      .then(function(searchValues, sbtCompletions) {
+        console.log(searchValues, sbtCompletions)
+        options( searchValues.concat(sbtCompletions) );
     });
   }
 
   return {
-    doSearch: doSearch
+    combinedSearch: combinedSearch
   }
 });
