@@ -16,13 +16,13 @@ object LocalTemplateRepo {
 
   def settings: Seq[Setting[_]] = Seq(
     localTemplateCache <<= target(_ / "template-cache"),
-    localTemplateCacheCreated <<= (localTemplateCache, localTemplateCacheHash, Keys.fullClasspath in Runtime, remoteTemplateCacheUri) map makeTemplateCache,
+    localTemplateCacheCreated <<= (localTemplateCache, localTemplateCacheHash, Keys.fullClasspath in Runtime, remoteTemplateCacheUri, streams) map makeTemplateCache,
     scalaVersion := Dependencies.scalaVersion,
     libraryDependencies += Dependencies.templateCache,
     // TODO - Allow debug version for testing?
     remoteTemplateCacheUri := "http://downloads.typesafe.com/typesafe-activator",
     localTemplateCacheHash := "06a31bb927e0a5e8fbf9f5f08dce4abc2f5f23b2",
-    latestTemplateCacheHash := downloadLatestTemplateCacheHash(remoteTemplateCacheUri.value),
+    latestTemplateCacheHash := downloadLatestTemplateCacheHash(remoteTemplateCacheUri.value, streams.value),
     checkTemplateCacheHash := {
       if (enableCheckTemplateCacheHash.value)
         checkLatestTemplateCacheHash(localTemplateCacheHash.value,
@@ -50,11 +50,29 @@ object LocalTemplateRepo {
     mainMethod.invoke(null, args)
   }
 
-  def makeTemplateCache(targetDir: File, hash: String, classpath: Keys.Classpath, uri: String): File = {
-    // TODO - We should check for staleness here...
-    if(!targetDir.exists) try {
+  def makeTemplateCache(targetDir: File, hash: String, classpath: Keys.Classpath, uri: String, streams: TaskStreams): File = {
+    val cachePropsFile = targetDir / "cache.properties"
+
+    // Delete stale cache.
+    if (cachePropsFile.exists) {
+      val oldHash = readHashFromProps(cachePropsFile)
+      if (oldHash != hash) {
+        streams.log.info(s"Deleting old template cache $oldHash to create new one $hash")
+        IO.delete(targetDir)
+      }
+    }
+
+    if (targetDir.exists) {
+      streams.log.info(s"Template cache $hash appears to exist already")
+    } else try {
+      streams.log.info(s"Downloading template cache $hash")
+
       IO createDirectory targetDir
 
+      // Important: Never _overwrite_ this file without
+      // also deleting the index, because
+      // activator-template-cache assumes the hash goes with
+      // the index we have.
       IO.write(targetDir / "cache.properties", "cache.hash=" + hash + "\n")
 
       val cl = makeClassLoaderFor(classpath)
@@ -71,21 +89,47 @@ object LocalTemplateRepo {
     targetDir
   }
 
-  def downloadLatestTemplateCacheHash(uriString: String): String = {
+  def readHashFromProps(propsFile: File): String = {
+    val fis = new java.io.FileInputStream(propsFile)
+    try {
+      val props = new java.util.Properties
+      props.load(fis)
+      Option(props.getProperty("cache.hash")).getOrElse(sys.error(s"No cache.hash in ${propsFile}"))
+    } finally {
+      fis.close()
+    }
+  }
+
+  // IO.download appears to use caching and we need the latest here
+  def downloadWithoutCaching(url: URL, toFile: File): Unit = {
+    import java.net.HttpURLConnection
+    val connection = url.openConnection() match {
+      case http: HttpURLConnection =>
+        http.setUseCaches(false)
+        http
+      case whatever =>
+        throw new Exception("Got weird non-http connection " + whatever)
+    }
+    if (connection.getResponseCode() != 200)
+      sys.error(s"Response code ${connection.getResponseCode()} from ${url}")
+
+    Using.bufferedInputStream(connection.getInputStream()) { in =>
+      IO.transfer(in, toFile)
+    }
+  }
+
+  def downloadLatestTemplateCacheHash(uriString: String, streams: TaskStreams): String = {
     IO.withTemporaryDirectory { tmpDir =>
       // this is cut-and-pastey/hardcoded vs. activator-template-cache,
-      // but it's not worth the headache of depending on activator-template-cache.
-      // If this ever breaks it should be obvious and easy to fix.
+      // the main problem with that is that it uses http instead of the
+      // S3 API and therefore gets stale cached content.
       val propsFile = tmpDir / "current.properties"
-      IO.download(new URL(uriString + "/index/v2/current.properties"), propsFile)
-      val fis = new java.io.FileInputStream(propsFile.getAbsolutePath)
-      try {
-        val props = new java.util.Properties
-        props.load(fis)
-        Option(props.getProperty("cache.hash")).getOrElse(sys.error("No cache.hash in current.properties"))
-      } finally {
-        fis.close()
-      }
+      val url = new URL(uriString + "/index/v2/current.properties")
+      streams.log.info(s"Downloading ${url} to ${propsFile}")
+      downloadWithoutCaching(url, propsFile)
+      val hash = readHashFromProps(propsFile)
+      streams.log.info(s"Got latest template cache hash $hash")
+      hash
     }
   }
 
