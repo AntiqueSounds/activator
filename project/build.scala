@@ -280,10 +280,7 @@ object TheActivatorBuild extends Build {
         "org.webjars" % "squirejs" % "0.1.0",
 
         "com.typesafe.play.extras" % "play-geojson_2.11" % "1.1.0",
-        "com.typesafe.akka" % "akka-contrib_2.11" % Dependencies.akkaVersion,
-        "org.codehaus.plexus" % "plexus-interactivity-api" % "1.0-alpha-6",
-        "org.codehaus.plexus" % "plexus-component-api" % "1.0-alpha-16",
-        "org.jcraft" % "jsch" % "0.1.38"
+        "com.typesafe.akka" % "akka-contrib_2.11" % Dependencies.akkaVersion
         ),
       Keys.mappings in S3.upload <<= (Keys.packageBin in Universal, Packaging.minimalDist, Keys.version) map { (zip, minimalZip, v) =>
         Seq(minimalZip -> ("typesafe-activator/%s/typesafe-activator-%s-minimal.zip" format (v, v)),
