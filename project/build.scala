@@ -184,7 +184,7 @@ object TheActivatorBuild extends Build {
   lazy val it = (
       ActivatorProject("integration-tests")
       settings(integration.settings:_*)
-      dependsOnRemote(sbtLauncherInterface, sbtIo210, sbtrcRemoteController)
+      dependsOnRemote(sbtLauncherInterface, sbtIo, sbtrcRemoteController)
       dependsOn(props)
       settings(
         org.sbtidea.SbtIdeaPlugin.ideaIgnoreModule := true,
