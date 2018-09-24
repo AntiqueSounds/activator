@@ -1,5 +1,9 @@
 # Typesafe Activator
 
+This is a CLONE of the original project.
+====
+
+
 This project aims to be the snappiest snaptastic snapster you've every snapping laid eyes on!  And by that, we mean it builds stuff.
 
 For more information on using Activator, visit: [http://typesafe.com/activator](http://typesafe.com/activator)
